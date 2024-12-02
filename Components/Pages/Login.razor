@@ -50,7 +50,6 @@
 
     protected override void OnInitialized()
     {
-        Console.WriteLine("OnInitialized");
         _ = HttpContext ?? throw new InvalidOperationException("Static SSR で実行してください。");
         if (HttpContext.User.Identity?.IsAuthenticated == true) {
         NavigationManager.NavigateTo(
