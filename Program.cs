@@ -1,5 +1,6 @@
 using DotnetBlazorAuthExample.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 
@@ -11,8 +12,18 @@ builder.Services.AddRazorComponents()
 
 // 認証系サービスの追加
 builder.Services
+    .AddAuthorization(options =>
+    {
+        options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build(); // デフォルトで認証を必須にする
+    })
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie();
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";  // 未ログイン状態でアクセスした際に表示されるページ
+        options.LogoutPath = null;
+    });
 
 // Blazor用の認証情報を提供するためのコンポーネント
 builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
@@ -32,11 +43,13 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// 静的ファイルを提供 ※認証不要 = 認証認可より前に追加すること
+app.UseStaticFiles();
+
 // 認証認可のミドルウェアを追加 ※app.UseAntiforgery() より前に追加すること
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()

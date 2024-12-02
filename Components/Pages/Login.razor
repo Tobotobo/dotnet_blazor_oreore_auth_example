@@ -5,29 +5,36 @@
 @using System.Security.Claims
 @inject NavigationManager NavigationManager
 
-<h3>Login</h3>
+@attribute [AllowAnonymous] // このページのみ認証不要
 
-<EditForm EditContext="EditContext" FormName="login-form" OnValidSubmit="LoginAsync">
-    <DataAnnotationsValidator />
-    <ValidationSummary Model="Model" />
-    <div>
-        <label>
-            ユーザー名:
-            <InputText @bind-Value="Model.UserName" />
-            <ValidationMessage For="() => Model.UserName" />
-        </label>
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow" style="width: 20rem;">
+        <div class="card-body">
+            <h3 class="text-center mb-3">Login</h3>
+            <EditForm EditContext="EditContext" FormName="login-form" OnValidSubmit="LoginAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary Model="Model" />
+                <div>
+                    <label class="mb-3">
+                        ユーザー名:
+                        <InputText @bind-Value="Model.UserName" class="w-100"/>
+                        <ValidationMessage For="() => Model.UserName" />
+                    </label>
+                </div>
+                <div>
+                    <label class="mb-3">
+                        パスワード:
+                        <InputText @bind-Value="Model.Password" type="password" class="w-100"/>
+                        <ValidationMessage For="() => Model.Password" />
+                    </label>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary w-100">ログイン</button>
+                </div>
+            </EditForm>
+        </div>
     </div>
-    <div>
-        <label>
-            パスワード:
-            <InputText @bind-Value="Model.Password" type="password" />
-            <ValidationMessage For="() => Model.Password" />
-        </label>
-    </div>
-    <div>
-        <button type="submit">ログイン</button>
-    </div>
-</EditForm>
+</div>
 
 @code {
     [SupplyParameterFromForm]
@@ -35,11 +42,23 @@
     private EditContext EditContext { get; set; } = default!;
     private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
 
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
     protected override void OnInitialized()
     {
+        Console.WriteLine("OnInitialized");
+        _ = HttpContext ?? throw new InvalidOperationException("Static SSR で実行してください。");
+        if (HttpContext.User.Identity?.IsAuthenticated == true) {
+        NavigationManager.NavigateTo(
+                "",
+                forceLoad: true
+            );
+        }
+
         Model ??= new();
         EditContext = new(Model);
         ValidationMessageStore = new(EditContext);
@@ -72,10 +91,6 @@
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(identity)
-            );
-            NavigationManager.NavigateTo(
-                "",
-                forceLoad: true
             );
         }
         else
